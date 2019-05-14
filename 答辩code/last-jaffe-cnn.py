@@ -19,126 +19,103 @@ from sklearn.model_selection import train_test_split
 import h5py
 from matplotlib import pyplot as plt
 from PIL import Image
+from scipy.io import loadmat
 
 
 # In[2]:
 
 
-ck_data = h5py.File('./CK_data.h5', 'r', driver='core')
+data = loadmat('jaffe_mean_data.mat')['jaffe_mean_data']
 
 
 # In[3]:
 
 
-X_data = np.expand_dims(np.asarray(ck_data['data_pixel']), axis=-1)
+data = data.reshape((181,256,256,1))
 
 
 # In[4]:
 
 
-Y_data = np.asarray(ck_data['data_label'])
+label = loadmat('cl_label.mat')['cl_label']
 
 
 # In[5]:
 
 
-Y_data = to_categorical(Y_data)
+X_train, X_test, Y_train, Y_test = train_test_split(data, label, test_size=0.2,random_state=0)
 
 
 # In[6]:
 
 
-X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2)
+print('Training: ',X_train.shape)
 
 
 # In[7]:
 
 
-num_train = X_train.shape[0]
+from keras.layers import Convolution2D, Activation, BatchNormalization, MaxPooling2D, Dropout, Dense, Flatten, AveragePooling2D
 
 
 # In[8]:
 
 
-num_val = X_test.shape[0]
+from keras.models import Sequential
 
 
 # In[9]:
 
 
-print('Training: ',X_train.shape)
-
-
-# In[10]:
-
-
-print('Validation: ',X_test.shape)
-
-
-# In[11]:
-
-
-from keras.layers import Convolution2D, Activation, BatchNormalization, MaxPooling2D, Dropout, Dense, Flatten, AveragePooling2D
-
-
-# In[12]:
-
-
-from keras.models import Sequential
-
-
-# In[13]:
-
-
 def get_nn_model():
-	#搭建网络
     model = Sequential()
-
-    model.add(Flatten(input_shape=(48,48,1)))
-    model.add(Dense(512))#添加512节点的全连接
-    model.add(BatchNormalization())#每个Batch上将上一层的激活值重新规范化
-    model.add(Activation('relu'))#激活
-    model.add(Dropout(0.25))
-
-    model.add(Dense(256))
+    model.add(MaxPooling2D(pool_size = (4,4), strides=None,input_shape=(256,256,1)))
+    model.add(Flatten())
+    model.add(Dense(128))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))
+#     model.add(Dropout(0.5))
 
+    model.add(Dense(128))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    model.add(Dense(128))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
     model.add(Dense(7))
     model.add(Activation('softmax'))
     return model
 
 
-# In[14]:
+# In[10]:
 
 
 def get_cnn_model():
     model = Sequential()
-
-    model.add(Convolution2D(64, (3, 1), padding='same', input_shape=(48,48,1)))
-    model.add(Convolution2D(64, (1, 3), padding='same'))
+    model.add(Convolution2D(64, (3, 3), padding='same',input_shape=(256,256,1)))
+    model.add(Convolution2D(64, (3, 3), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='same'))
     model.add(Dropout(0.25))
 
-    model.add(Convolution2D(128, (3, 1), padding='same'))
-    model.add(Convolution2D(128, (1, 3), padding='same'))
+    model.add(Convolution2D(128, (3, 3), padding='same'))
+    model.add(Convolution2D(128, (3, 3), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='same'))
     model.add(Dropout(0.25))
 
-    model.add(Convolution2D(256, (3, 1), padding='same'))
-    model.add(Convolution2D(256, (1, 3), padding='same'))
+    model.add(Convolution2D(256, (3, 3), padding='same'))
+    model.add(Convolution2D(256, (3, 3), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='same'))
     model.add(Dropout(0.25))
 
-    model.add(Convolution2D(512, (3, 1), padding='same'))
-    model.add(Convolution2D(512, (1, 3), padding='same'))
+    model.add(Convolution2D(512, (3, 3), padding='same'))
+    model.add(Convolution2D(512, (3, 3), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='same'))
@@ -146,64 +123,52 @@ def get_cnn_model():
 
     model.add(Flatten())
 
-    model.add(Dense(512))
+    model.add(Dense(1024))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.25))
 
-    model.add(Dense(256))
+    model.add(Dense(1024))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))
+    model.add(Dropout(0.5))
 
     model.add(Dense(7))
     model.add(Activation('softmax'))
     return model
 
 
-# In[15]:
+# In[11]:
 
 
 cnn_model = get_cnn_model()
 
 
-# In[16]:
+# In[12]:
 
 
 nn_model = get_nn_model()
 
 
-# In[17]:
-
-
-cnn_model.summary()
-
-
-# In[18]:
-
-
-nn_model.summary()
-
-
-# In[19]:
+# In[13]:
 
 
 from keras.preprocessing.image import ImageDataGenerator 
 
 
-# In[20]:
+# In[14]:
 
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 
-# In[21]:
+# In[15]:
 
 
 from keras import backend as K
 
 
-# In[22]:
+# In[16]:
 
 
 def fbeta(y_true, y_pred, threshold_shift=0):
@@ -226,11 +191,11 @@ def fbeta(y_true, y_pred, threshold_shift=0):
     return K.mean((beta_squared + 1) * (precision * recall) / (beta_squared * precision + recall + K.epsilon()))
 
 
-# In[23]:
+# In[17]:
 
 
 def train_cnn_model(model):
-    filepath='../opt/ck-cnn/Model.{epoch:02d}-{val_acc:.4f}.hdf5'
+    filepath='../opt/jaffe-cnn/Model.{epoch:02d}-{val_acc:.4f}.hdf5'
     checkpointer = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='auto')
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0, mode='auto', cooldown=0, min_lr=0)
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
@@ -252,27 +217,27 @@ def train_cnn_model(model):
     datagen.fit(X_test)    
     batch_size = 32
 
-    num_epochs = 25
+    num_epochs = 200
     model.compile(loss='categorical_crossentropy',
              optimizer='adam',
              metrics=[fbeta, 'acc'])
     train_flow = datagen.flow(X_train, Y_train, batch_size=batch_size)
-    test_flow = datagen.flow(X_test, Y_test)
+    validation_flow = datagen.flow(X_test, Y_test)
     history = model.fit_generator(train_flow,
                     steps_per_epoch=len(X_train) / batch_size,
                     epochs=num_epochs, 
                     verbose=1, 
-                    validation_data=test_flow, 
+                    validation_data=validation_flow, 
                     validation_steps=len(X_test) / batch_size,
                     callbacks=[checkpointer, reduce_lr, checkpointer])
     return history, model
 
 
-# In[27]:
+# In[18]:
 
 
 def train_nn_model(model):
-    filepath='../opt/ck-nn/Model.{epoch:02d}-{val_acc:.4f}.hdf5'
+    filepath='../opt/jaffe-nn/Model.{epoch:02d}-{val_acc:.4f}.hdf5'
     checkpointer = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='auto')
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0, mode='auto', cooldown=0, min_lr=0)
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
@@ -294,47 +259,47 @@ def train_nn_model(model):
     datagen.fit(X_test)    
     batch_size = 32
 
-    num_epochs = 25
+    num_epochs = 200
     model.compile(loss='categorical_crossentropy',
-             optimizer='adam',
+             optimizer='sgd',
              metrics=[fbeta, 'acc'])
     train_flow = datagen.flow(X_train, Y_train, batch_size=batch_size)
-    test_flow = datagen.flow(X_test, Y_test)
+    validation_flow = datagen.flow(X_test, Y_test)
     history = model.fit_generator(train_flow,
                     steps_per_epoch=len(X_train) / batch_size,
                     epochs=num_epochs, 
                     verbose=1, 
-                    validation_data=test_flow, 
+                    validation_data=validation_flow, 
                     validation_steps=len(X_test) / batch_size,
                     callbacks=[checkpointer, reduce_lr, checkpointer])
     return history, model
 
 
-# In[25]:
+# In[19]:
 
 
-history, cnn_model = train_cnn_model(cnn_model)
+cnn_history, cnn_model = train_cnn_model(cnn_model)
 
 
-# In[28]:
+# In[20]:
 
 
 nn_history, nn_model = train_nn_model(nn_model)
 
 
-# In[30]:
+# In[21]:
 
 
-n_classes = Y_data.shape[1]
+n_classes = label.shape[1]
 
 
-# In[31]:
+# In[22]:
 
 
 labels=range(n_classes)
 
 
-# In[32]:
+# In[23]:
 
 
 def eval_model(history, model):
@@ -375,13 +340,13 @@ def eval_model(history, model):
     ax.set(xlabel='Predicted label', ylabel='True label')
 
 
-# In[33]:
+# In[25]:
 
 
-eval_model(history, cnn_model)
+eval_model(cnn_history, cnn_model)
 
 
-# In[34]:
+# In[26]:
 
 
 eval_model(nn_history, nn_model)

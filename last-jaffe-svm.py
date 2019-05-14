@@ -19,113 +19,81 @@ from time import time
 import logging#程序进展信息
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split#分割数据集
+#from sklearn.cross_validation import train_test_split
+from sklearn.datasets import fetch_lfw_people#下载数据集
 from sklearn.model_selection import GridSearchCV
+#from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import RandomizedPCA
+#from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
+from scipy.io import loadmat
 
 
 # In[2]:
 
 
-ck_data = h5py.File('./CK_data.h5', 'r', driver='core')
-X_data = np.expand_dims(np.asarray(ck_data['data_pixel']), axis=-1)
-X_data = X_data.reshape((981,48*48))
-y_data = np.asarray(ck_data['data_label'])
-y_data = to_categorical(y_data)
-n_classes = y_data.shape[1] #列维数
+data = loadmat('jaffe_mean_data.mat')['jaffe_mean_data']
 
 
 # In[3]:
 
 
-print(ck_data)
+label = loadmat('cl_label.mat')['cl_label']
 
 
 # In[4]:
 
 
-print(X_data)
+n_classes = label.shape[1]
 
 
 # In[5]:
 
 
-print(y_data)
+X_train, X_test, Y_train, Y_test = train_test_split(data, label, test_size=0.2,random_state=0)
 
 
 # In[6]:
 
 
-print(n_classes)
+random_state=0
 
 
 # In[7]:
 
 
-print(y_data.shape[0])
+n_components = 10
 
 
 # In[8]:
 
 
-X_train, X_validation, y_train, y_validation = train_test_split(X_data, y_data, test_size=0.2)
+pca =PCA(svd_solver='randomized',n_components=n_components,whiten=True).fit(X_train)#降低维度
 
 
 # In[9]:
 
 
-print('Training: ',X_train.shape)
+X_train_pca = pca.transform(X_train)      #得到训练集投影系数
 
 
 # In[10]:
 
 
-print('Validation: ',X_validation.shape)
+X_val_pca = pca.transform(X_test) 
 
 
 # In[11]:
 
 
-#使用主成分分析(PCA)降维
-n_components = 10
-#因为特征值维度比较高，所以需要降低维度，提取特征
-pca =PCA(svd_solver='randomized',n_components=n_components,whiten=True).fit(X_train)
-#得到训练集投影系数
-X_train_pca = pca.transform(X_train)
-#得到测试集投影系数
-X_val_pca = pca.transform(X_validation) 
+eigenfaces = pca.components_.reshape((n_components, 256, 256))
 
 
 # In[12]:
 
 
-print(X_train_pca)
-
-
-# In[13]:
-
-
-print(X_val_pca)
-
-
-# In[14]:
-
-
-print(X_train)
-
-
-# In[15]:
-
-#提取特征值
-eigenfaces = pca.components_.reshape((n_components, 48, 48))
-
-
-# In[19]:
-
-#画图
 def plot_gallery(images, titles, h, w, n_row=3, n_col=3):
     """Helper function to plot a gallery of portraits"""
     plt.figure(figsize=(1.8 * n_col, 2.4 * n_row))
@@ -136,50 +104,27 @@ def plot_gallery(images, titles, h, w, n_row=3, n_col=3):
         plt.title(titles[i], size=12)
         plt.xticks(())
         plt.yticks(())
-
-
-# In[20]:
-
-
+ 
 eigenface_titles = ["eigenface %d" % i for i in range(eigenfaces.shape[0])]
-
-
-# In[21]:
-
-
-plot_gallery(eigenfaces, eigenface_titles, 48, 48)
-
-
-# In[22]:
-
-
+plot_gallery(eigenfaces, eigenface_titles, 256, 256)
 plt.show()
 
 
-# In[23]:
+# In[13]:
 
 
-y_train_ = np.argmax(y_train, axis=-1)
+y_train_ = np.argmax(Y_train, axis=-1)
 
 
-# In[24]:
+# In[14]:
 
 
-y_train_.shape
-
-
-# In[25]:
-
-
-#训练SVM分类器
 print("Fitting the classifier to the training set")
 t0 = time()
-#设置参数，C：对于错误部分进行处罚，gamma：表示以多少的特征值启动，共30种组合
 param_grid = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
               'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
-#网格搜索
-#class_weight='balanced'表示调整各类别权重，权重与该类中样本数成反比
 clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
+#class_weight='balanced'表示调整各类别权重，权重与该类中样本数成反比，
 #防止模型过于拟合某个样本数量过大的类
 clf = clf.fit(X_train_pca, y_train_)
 print("done in %0.3fs" % (time() - t0))
@@ -187,17 +132,14 @@ print("Best estimator found by grid search:")
 print(clf.best_estimator_)
 
 
-# In[26]:
+# In[15]:
 
 
-#验证，对模型好坏进行评估
 print("Predicting people's names on the test set")
 t0 = time()
 y_pred = clf.predict(X_val_pca)
 print("done in %0.3fs" % (time() - t0))
-y_val = np.argmax(y_validation, axis=-1)
-#拿到分类器的report
+y_val = np.argmax(Y_test, axis=-1)
 print(classification_report(y_val, y_pred))
-#画n*n的方格，对角线数据，表示预测正确的
 print(confusion_matrix(y_val, y_pred, labels=range(n_classes)))
 

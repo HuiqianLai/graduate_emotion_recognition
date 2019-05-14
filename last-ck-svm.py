@@ -22,7 +22,7 @@ from sklearn.model_selection import train_test_split#分割数据集
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import RandomizedPCA
+#from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 
@@ -71,7 +71,7 @@ print(y_data.shape[0])
 # In[8]:
 
 
-X_train, X_validation, y_train, y_validation = train_test_split(X_data, y_data, test_size=0.2)
+X_train, X_validation, y_train, y_validation = train_test_split(X_data, y_data, test_size=0.2,random_state=0)
 
 
 # In[9]:
@@ -119,13 +119,13 @@ print(X_train)
 
 # In[15]:
 
-#提取特征值
+
 eigenfaces = pca.components_.reshape((n_components, 48, 48))
 
 
-# In[19]:
+# In[16]:
 
-#画图
+
 def plot_gallery(images, titles, h, w, n_row=3, n_col=3):
     """Helper function to plot a gallery of portraits"""
     plt.figure(figsize=(1.8 * n_col, 2.4 * n_row))
@@ -138,40 +138,39 @@ def plot_gallery(images, titles, h, w, n_row=3, n_col=3):
         plt.yticks(())
 
 
-# In[20]:
+# In[17]:
 
 
 eigenface_titles = ["eigenface %d" % i for i in range(eigenfaces.shape[0])]
 
 
-# In[21]:
+# In[18]:
 
 
 plot_gallery(eigenfaces, eigenface_titles, 48, 48)
 
 
-# In[22]:
+# In[19]:
 
 
 plt.show()
 
 
-# In[23]:
+# In[20]:
 
 
 y_train_ = np.argmax(y_train, axis=-1)
 
 
-# In[24]:
+# In[21]:
 
 
 y_train_.shape
 
 
-# In[25]:
+# In[22]:
 
 
-#训练SVM分类器
 print("Fitting the classifier to the training set")
 t0 = time()
 #设置参数，C：对于错误部分进行处罚，gamma：表示以多少的特征值启动，共30种组合
@@ -187,7 +186,7 @@ print("Best estimator found by grid search:")
 print(clf.best_estimator_)
 
 
-# In[26]:
+# In[23]:
 
 
 #验证，对模型好坏进行评估

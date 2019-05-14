@@ -48,7 +48,7 @@ Y_data = to_categorical(Y_data)
 # In[6]:
 
 
-X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2)
+X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2,random_state=0)
 
 
 # In[7]:
@@ -91,13 +91,11 @@ from keras.models import Sequential
 
 
 def get_nn_model():
-	#搭建网络
     model = Sequential()
-
     model.add(Flatten(input_shape=(48,48,1)))
-    model.add(Dense(512))#添加512节点的全连接
-    model.add(BatchNormalization())#每个Batch上将上一层的激活值重新规范化
-    model.add(Activation('relu'))#激活
+    model.add(Dense(512))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
     model.add(Dropout(0.25))
 
     model.add(Dense(256))
@@ -252,7 +250,7 @@ def train_cnn_model(model):
     datagen.fit(X_test)    
     batch_size = 32
 
-    num_epochs = 25
+    num_epochs = 200
     model.compile(loss='categorical_crossentropy',
              optimizer='adam',
              metrics=[fbeta, 'acc'])
@@ -268,7 +266,7 @@ def train_cnn_model(model):
     return history, model
 
 
-# In[27]:
+# In[24]:
 
 
 def train_nn_model(model):
@@ -294,7 +292,7 @@ def train_nn_model(model):
     datagen.fit(X_test)    
     batch_size = 32
 
-    num_epochs = 25
+    num_epochs = 200
     model.compile(loss='categorical_crossentropy',
              optimizer='adam',
              metrics=[fbeta, 'acc'])
@@ -316,25 +314,25 @@ def train_nn_model(model):
 history, cnn_model = train_cnn_model(cnn_model)
 
 
-# In[28]:
+# In[26]:
 
 
 nn_history, nn_model = train_nn_model(nn_model)
 
 
-# In[30]:
+# In[27]:
 
 
 n_classes = Y_data.shape[1]
 
 
-# In[31]:
+# In[28]:
 
 
 labels=range(n_classes)
 
 
-# In[32]:
+# In[29]:
 
 
 def eval_model(history, model):
@@ -375,13 +373,13 @@ def eval_model(history, model):
     ax.set(xlabel='Predicted label', ylabel='True label')
 
 
-# In[33]:
+# In[30]:
 
 
 eval_model(history, cnn_model)
 
 
-# In[34]:
+# In[31]:
 
 
 eval_model(nn_history, nn_model)
